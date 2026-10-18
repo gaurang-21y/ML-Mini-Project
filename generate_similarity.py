@@ -6,8 +6,8 @@ import scipy.sparse
 # Load movies dataset
 movies = pd.read_csv("IMDB_Top_250_Movies.csv")
 
-# Filter movies to reduce size (e.g., keep only top 100 movies)
-movies = movies.head(100)  # Adjust this number as needed
+# Using all movies from the dataset
+# movies = movies.head(100)  # Optional: limit if needed
 
 
 # ✅ Ensure "genres" column exists (corrected from "genre" to "genres")

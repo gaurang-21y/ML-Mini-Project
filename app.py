@@ -1,9 +1,16 @@
+import sys
 import streamlit as st
 import pandas as pd
 import requests
 import scipy.sparse
 import time
 from functools import lru_cache
+
+# Ensure Windows terminal doesn't crash on unicode prints
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 TMDB_API_KEY = "8265bd1679663a7ea12ac168da84d2e8"
 DEFAULT_POSTER_URL = "https://via.placeholder.com/500x750?text=No+Poster"  # Fallback image
@@ -25,10 +32,10 @@ def get_movie_id(movie_name):
             break
         except (requests.exceptions.RequestException, requests.exceptions.HTTPError) as e:
             if attempt == MAX_RETRIES - 1:
-                print(f"❌ Failed to fetch movie ID for '{movie_name}' after {MAX_RETRIES} attempts: {str(e)}")
+                print(f"[ERROR] Failed to fetch movie ID for '{movie_name}' after {MAX_RETRIES} attempts: {str(e)}")
                 return None
             wait_time = 2 ** attempt  # Exponential backoff
-            print(f"⚠️ Retry {attempt + 1}/{MAX_RETRIES} for '{movie_name}'. Waiting {wait_time}s...")
+            print(f"[WARN] Retry {attempt + 1}/{MAX_RETRIES} for '{movie_name}'. Waiting {wait_time}s...")
             time.sleep(wait_time)
     if response.status_code == 200:
         results = response.json().get("results")
@@ -39,7 +46,7 @@ def get_movie_id(movie_name):
 @lru_cache(maxsize=128)
 def fetch_poster(movie_name):
     movie_id = get_movie_id(movie_name)
-    print(f"🔍 Movie ID for '{movie_name}': {movie_id}")
+    print(f"[INFO] Movie ID for '{movie_name}': {movie_id}")
     if movie_id:
         movie_url = f"https://api.themoviedb.org/3/movie/{movie_id}"
         params = {"api_key": TMDB_API_KEY}
@@ -50,17 +57,17 @@ def fetch_poster(movie_name):
                 response.raise_for_status()
                 break
             except Exception as e:
-                print(f"❌ Poster fetch failed: {e}")
+                print(f"[ERROR] Poster fetch failed: {e}")
                 return DEFAULT_POSTER_URL
         
         if response.status_code == 200:
             data = response.json()
             poster_path = data.get("poster_path")
-            print(f"🖼️ Poster path: {poster_path}")
+            print(f"[INFO] Poster path: {poster_path}")
             if poster_path:
                 return f"https://image.tmdb.org/t/p/w500{poster_path}"
     
-    print(f"⚠️ No valid poster found for: {movie_name}")
+    print(f"[WARN] No valid poster found for: {movie_name}")
     return DEFAULT_POSTER_URL
 
 
@@ -82,10 +89,10 @@ def recommend(movie_name):
     
     for idx, _ in similar_movies:
         movie_title = movies_df.iloc[idx]["name"]
-        print(f"🔍 Fetching poster for: {movie_title}")  # Debug line
+        print(f"[INFO] Fetching poster for: {movie_title}")
         recommended_movies.append(movie_title)
         poster_url = fetch_poster(movie_title)
-        print(f"🖼️ Poster URL: {poster_url}")  # Debug line
+        print(f"[INFO] Poster URL: {poster_url}")
         recommended_posters.append(poster_url)
     
     return recommended_movies, recommended_posters
